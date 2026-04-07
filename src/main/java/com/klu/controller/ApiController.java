@@ -29,7 +29,16 @@ public class ApiController {
 
     @PostMapping("/questions")
     public Map<String, String> addQuestion(@RequestBody Map<String, String> question) {
+        if (!question.containsKey("answer")) {
+            question.put("answer", "");
+        }
         questions.add(question);
         return question;
+    }
+    @PutMapping("/questions/{index}")
+    public Map<String, String> updateAnswer(@PathVariable int index, @RequestBody Map<String, String> body) {
+        Map<String, String> q = questions.get(index);
+        q.put("answer", body.get("answer"));
+        return q;
     }
 }
