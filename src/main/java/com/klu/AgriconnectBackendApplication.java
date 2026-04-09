@@ -5,9 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class AgriconnectBackendApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(AgriconnectBackendApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(AgriconnectBackendApplication.class, args);
+    }
 }

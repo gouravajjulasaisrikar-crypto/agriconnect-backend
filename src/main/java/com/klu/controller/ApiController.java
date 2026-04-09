@@ -1,44 +1,88 @@
 package com.klu.controller;
 
+import com.klu.model.Question;
+import com.klu.model.Article;
+import com.klu.model.User;
+import com.klu.repository.QuestionRepository;
+import com.klu.repository.ArticleRepository;
+import com.klu.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "*")
 public class ApiController {
 
-    List<Map<String, String>> questions = new ArrayList<>();
+    @Autowired
+    private QuestionRepository questionRepository;
 
-    public ApiController() {
-        Map<String, String> q1 = new HashMap<>();
-        q1.put("title", "How to improve crop yield?");
-        q1.put("author", "Farmer Raj");
+    @Autowired
+    private ArticleRepository articleRepository;
 
-        Map<String, String> q2 = new HashMap<>();
-        q2.put("title", "Best fertilizers?");
-        q2.put("author", "Farmer Ravi");
-
-        questions.add(q1);
-        questions.add(q2);
-    }
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/questions")
-    public List<Map<String, String>> getQuestions() {
-        return questions;
+    public List<Question> getQuestions() {
+        return questionRepository.findAll();
     }
 
     @PostMapping("/questions")
-    public Map<String, String> addQuestion(@RequestBody Map<String, String> question) {
-        if (!question.containsKey("answer")) {
-            question.put("answer", "");
-        }
-        questions.add(question);
-        return question;
+    public Question addQuestion(@RequestBody Question question) {
+        return questionRepository.save(question);
     }
-    @PutMapping("/questions/{index}")
-    public Map<String, String> updateAnswer(@PathVariable int index, @RequestBody Map<String, String> body) {
-        Map<String, String> q = questions.get(index);
-        q.put("answer", body.get("answer"));
-        return q;
+
+    @PutMapping("/questions/{id}")
+    public Question updateAnswer(@PathVariable Long id, @RequestBody Map<String,String> body) {
+        Question q = questionRepository.findById(id).orElseThrow();
+        q.setAnswer(body.get("answer"));
+        return questionRepository.save(q);
+    }
+
+    @GetMapping("/articles")
+    public List<Article> getArticles() {
+        return articleRepository.findAll();
+    }
+
+    @PostMapping("/articles")
+    public Article addArticle(@RequestBody Article article) {
+        return articleRepository.save(article);
+    }
+
+    @PostMapping("/signup")
+    public User signup(@RequestBody User user) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        return userRepository.save(user);
+    }
+
+    @PostMapping("/login")
+    public User login(@RequestBody User user) {
+        User existingUser = userRepository.findByUsername(user.getUsername())
+             .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+        
+        if (!existingUser.getPassword().equals(user.getPassword())) {
+            throw new RuntimeException("Invalid username or password");
+        }
+        return existingUser;
+    }
+
+    @GetMapping("/users")
+    public List<User> getUsers() {
+        return userRepository.findAll();
+    }
+
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+    }
+
+    @DeleteMapping("/articles/{id}")
+    public void deleteArticle(@PathVariable Long id) {
+        articleRepository.deleteById(id);
     }
 }
