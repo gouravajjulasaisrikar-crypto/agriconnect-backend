@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Data and Logs ###
+data/
+*.db
+*.log
+hs_err_pid*.log
