@@ -84,16 +84,19 @@ public class ApiController {
         String otp = String.format("%06d", new Random().nextInt(999999));
         otpStorage.put(existingUser.getUsername(), otp);
 
-        try {
-            SimpleMailMessage m = new SimpleMailMessage();
-            m.setTo(existingUser.getEmail());
-            m.setSubject("Your Login OTP");
-            m.setText("Your OTP for AgriConnect is: " + otp);
-            mailSender.send(m);
-            System.out.println("OTP successfully sent to " + existingUser.getEmail() + ": " + otp);
-        } catch (Exception e) {
-            System.out.println("Mail send failed, but OTP is: " + otp); // Fallback for local testing
-        }
+        // Send email asynchronously to prevent slow login times
+        new Thread(() -> {
+            try {
+                SimpleMailMessage m = new SimpleMailMessage();
+                m.setTo(existingUser.getEmail());
+                m.setSubject("Your Login OTP");
+                m.setText("Your OTP for AgriConnect is: " + otp);
+                mailSender.send(m);
+                System.out.println("OTP successfully sent to " + existingUser.getEmail() + ": " + otp);
+            } catch (Exception e) {
+                System.out.println("Mail send failed, but OTP is: " + otp);
+            }
+        }).start();
 
         return Map.of("status", "OTP_SENT", "email", existingUser.getEmail());
     }
