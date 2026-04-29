@@ -9,14 +9,10 @@ import com.klu.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -31,10 +27,7 @@ public class ApiController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private JavaMailSender mailSender;
 
-    private Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
     @GetMapping("/questions")
     public List<Question> getQuestions() {
@@ -72,7 +65,7 @@ public class ApiController {
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestBody User user) {
+    public User login(@RequestBody User user, HttpServletRequest request) {
         User existingUser = userRepository.findByUsername(user.getUsername())
              .orElseThrow(() -> new RuntimeException("Invalid username or password"));
         
@@ -80,43 +73,11 @@ public class ApiController {
             throw new RuntimeException("Invalid username or password");
         }
 
-        // Generate 6-digit OTP
-        String otp = String.format("%06d", new Random().nextInt(999999));
-        otpStorage.put(existingUser.getUsername(), otp);
+        // Establish the required Server Session!
+        HttpSession session = request.getSession(true);
+        session.setAttribute("user", existingUser);
 
-        // Send email asynchronously to prevent slow login times
-        new Thread(() -> {
-            try {
-                SimpleMailMessage m = new SimpleMailMessage();
-                m.setTo(existingUser.getEmail());
-                m.setSubject("Your Login OTP");
-                m.setText("Your OTP for AgriConnect is: " + otp);
-                mailSender.send(m);
-                System.out.println("OTP successfully sent to " + existingUser.getEmail() + ": " + otp);
-            } catch (Exception e) {
-                System.out.println("Mail send failed, but OTP is: " + otp);
-            }
-        }).start();
-
-        return Map.of("status", "OTP_SENT", "email", existingUser.getEmail());
-    }
-
-    @PostMapping("/verify-otp")
-    public User verifyOtp(@RequestBody Map<String, String> body, HttpServletRequest request) {
-        String username = body.get("username");
-        String otp = body.get("otp");
-
-        if (otp != null && otp.equals(otpStorage.get(username))) {
-            otpStorage.remove(username); // prevent reuse
-            User user = userRepository.findByUsername(username).orElseThrow();
-            
-            // Establish the required Server Session!
-            HttpSession session = request.getSession(true);
-            session.setAttribute("user", user);
-
-            return user;
-        }
-        throw new RuntimeException("Invalid OTP");
+        return existingUser;
     }
 
     @GetMapping("/users")
